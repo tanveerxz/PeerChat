@@ -1,0 +1,182 @@
+#: kivy 2.1.0
+#: import NoTransition kivy.uix.screenmanager.NoTransition
+<SM>: 
+    id: sm
+    transition: NoTransition()
+    EmptyScreen:
+<EmptyScreen>: 
+    name: 'Empty'
+<SplashScreen>: 
+    name: 'Splash'
+    TypeWriter: 
+        id: TypeWriter
+        pos_hint: {'center_x': .54, 'center_y': .5}
+        size_hint: .3, .3
+        font_size: 0.07 * root.height
+        font_name: r'data\fonts\Roboto-Bold.ttf'
+        text_size: self.size
+        halign: 'left'
+        valign: 'middle'
+        markup: True
+    Image:
+        id: loader
+        pos_hint: {'center_x': .5, 'center_y': .4}
+        size_hint: .05, .05
+        color: [0, 0, 0, 0]
+        source: 'dependencies\icons\loader.gif'
+        anim_delay: 0.04
+<UserNameScreen>: 
+    name: 'UserName'
+    BoxLayout: 
+        orientation: 'vertical'
+        pos_hint: {'center_x': .5, 'center_y': .5}
+        size_hint: .5, .31
+        BoxLayout: 
+            pos_hint: {'center_x': .4}
+            size_hint: .8, .2
+            Label: 
+            Image: 
+                size_hint: .8, 1
+                source: r'dependencies\icons\Icon.png'
+            Label: 
+                size_hint: .8, 1
+                text: '[b]PeerChat[/b]'
+                font_size: 20
+                markup: True
+                padding_y: 20
+            Label: 
+        MDTextField: 
+            id: username_input
+            pos_hint: {'center_x': .5}
+            size_hint: .8, .25
+            hint_text: 'Enter your username'
+            helper_text: 'Max length exceeded.'
+            color_mode: 'custom'
+            text_color_focus: 'orange'
+            hint_text_color_focus: 'orange'
+            line_color_focus: 'orange'
+            max_text_length: 20
+            helper_text_mode: 'on_error'
+            on_text_validate: root.validate_username()
+            on_text: root.change_helper_text('Max length exceeded.')
+        Label: 
+            size_hint: 1, .08
+        MDIconButton:
+            pos_hint: {'center_x': .5}
+            md_bg_color: app.theme_cls.primary_color
+            icon: 'arrow-right'
+            on_release: root.validate_username()
+<UsersList>: 
+    ScrollView: 
+        always_overscroll: False
+        scroll_type: ['bars']
+        scroll_wheel_distance: 80
+        bar_width: 0
+        smooth_scroll_end: 0
+        BoxLayout: 
+            id: users_list
+            orientation: 'vertical'
+            size_hint: 1, None
+            height: self.minimum_height
+            padding: 10
+            spacing: 5
+            Label: 
+                id: empty_list_label
+                size_hint: 1, None
+                height: 20
+                text: root.empty_list_label_text
+                font_size: 17
+                padding_x: 10
+<UserButton>: 
+    size_hint: 1, 1
+    theme_text_color: 'Custom'
+    text_color: 'white'
+    line_color: 1, 1, 1, .2
+    text_size: self.size
+    halign: 'left'
+    valign: 'center'
+<SelfMessageLabel>: 
+    pos_hint: {'right': 1}
+    size_hint_y: None
+    height: message_label.texture_size[1] + 30
+    size_hint_x: None
+    width: 0
+    adaptive_height: True
+    BoxLayout: 
+        MDScreen: 
+            md_bg_color: 0, 1, 1, .3
+            radius: dp(15)
+            BoxLayout: 
+                orientation: 'vertical'
+                Label:
+                    size_hint: 1, None
+                    height: 12
+                MDLabel: 
+                    id: message_label
+                    color: 1, 1, 1, 1
+                    font_size: 14
+                    valign: "middle"
+                    halign: 'left'
+                    padding_x: 10
+                    bold: True
+                MDLabel: 
+                    id: time_label
+                    size_hint: 1, None
+                    height: 5
+                    font_size: 10
+                    valign: "top"
+                    halign: 'right'
+                    padding_x: 10
+                Label: 
+                    size_hint: 1, None
+                    height: 7
+        Label: 
+            size_hint: None, 1
+            width: 20
+<OtherMessageLabel>: 
+    pos_hint: {'left': 1}
+    size_hint_y: None
+    height: message_label.texture_size[1] + 30
+    size_hint_x: None
+    width: 0
+    adaptive_height: True
+    BoxLayout: 
+        Label: 
+            size_hint: None, 1
+            width: 20
+        MDScreen: 
+            md_bg_color: 1, .5, .5, 1
+            radius: dp(15)
+            BoxLayout: 
+                orientation: 'vertical'
+                Label: 
+                    size_hint: 1, None
+                    height: 12
+                MDLabel: 
+                    id: message_label
+                    color: 1, 1, 1, 1
+                    font_size: 14
+                    valign: "middle"
+                    halign: 'left'
+                    padding_x: 10
+                    bold: True
+                MDLabel: 
+                    id: time_label
+                    size_hint: 1, None
+                    height: 5
+                    font_size: 10
+                    valign: "top"
+                    halign: 'right'
+                    padding_x: 10
+                Label: 
+                    size_hint: 1, None
+                    height: 7
+<DateLabel>: 
+    pos_hint: {'center_x': .5}
+    size_hint: None, None
+    height: 30
+    width: 70
+    md_bg_color: 1, 1, 1, .2
+    Label: 
+        id: date_label
+        font_size: 12

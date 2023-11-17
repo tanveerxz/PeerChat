@@ -1,0 +1,181 @@
+#: kivy 2.1.0
+<HomeScreen>: 
+    name: 'Home'
+    BoxLayout: 
+        MDCard: 
+            size_hint: .65, 1
+            md_bg_color: app.theme_cls.primary_color
+            style: 'filled'
+            BoxLayout: 
+                orientation: 'vertical'
+                BoxLayout: 
+                    size_hint: 1, .12
+                    Label: 
+                        id: menu_title_label
+                        text: 'Chats'
+                        font_size: 18
+                        text_size: self.size
+                        halign: 'left'
+                        valign: 'middle'
+                        padding_x: 10
+                    BoxLayout: 
+                        orientation: 'vertical'
+                        size_hint: .2 , 1
+                        Label: 
+                        MDIconButton: 
+                            id: edit_username_button
+                            icon: 'account-edit'
+                            md_bg_color: 0, 0, 0, 0
+                            on_release: root.on_release_edit_username()
+                        Label: 
+                    Label: 
+                        size_hint: .05 , 1
+                    BoxLayout: 
+                        orientation: 'vertical'
+                        size_hint: .2 , 1
+                        Label: 
+                        MDIconButton: 
+                            id: add_user_button
+                            icon: 'account-plus'
+                            md_bg_color: 0, 0, 0, 0
+                            on_release: root.on_release_add_user()
+                        Label: 
+                    Label: 
+                        size_hint: .05 , 1
+                ScreenManager: 
+                    id: menu_sm
+                    ChatsList: 
+                        id: Chats
+                    AddUserList: 
+                        id: AddUser
+        ScreenManager: 
+            id: chat_sm
+            transition: NoTransition()
+            Screen: 
+                name: 'Display'
+                BoxLayout: 
+                    orientation: 'vertical'
+                    pos_hint: {'center_x': .5, 'center_y': .5}
+                    size_hint: .5, .5
+                    BoxLayout: 
+                        Image: 
+                            source: r'dependencies\icons\Icon.png'
+                        Label: 
+                            text: '[b]PeerChat[/b]'
+                            font_size: 25
+                            markup: True
+                            padding_y: 20
+                Label: 
+                    pos_hint: {'center_x': .5, 'center_y': .35}
+                    size_hint: 1, .1
+                    text: 'Send messages securely with\n        End to End Encryption.'
+                    color: 1, 1, 1, .5
+<ChatScreen>: 
+    BoxLayout: 
+        orientation: 'vertical'
+        Label: 
+            id: username_label
+            size_hint: 1, .1
+            font_size: 25
+            text_size: self.size
+            halign: 'left'
+            valign: 'middle'
+            padding_x: 20
+            bold: True
+            italic: True
+            canvas.before: 
+                Color: 
+                    rgba: 1, 1, 1, 1
+                Line: 
+                    width: 1
+                    rectangle: self.x, self.y, self.width, 0
+        ScrollView: 
+            id: chat_scroll_view
+            bar_width: 1
+            scroll_type: ['content']
+            smooth_scroll_end: 10
+            always_overscroll: False
+            BoxLayout: 
+                id: chat
+                orientation: 'vertical'
+                size_hint: 1, None
+                height: self.minimum_height
+                spacing: 10
+                padding: 10
+                MDCard:
+                    pos_hint: {'center_x': .5}
+                    size_hint: None, None
+                    height: 30
+                    width: chat_started_label.texture_size[0] + 20
+                    md_bg_color: 1, 1, 1, .2
+                    Label:
+                        id: chat_started_label
+                        font_size: 14
+                        italic: True
+        Label: 
+            size_hint: 1, .01
+        GridLayout: 
+            cols: 6
+            size_hint: 1, None
+            height: 30
+            Label: 
+                size_hint: None, 1
+                width: 10
+            BoxLayout: 
+                background_image: ''
+                background_normal: ''
+                background_active: ''
+                canvas.before: 
+                    Color: 
+                        rgba: .25, .25, .25, .8
+                    RoundedRectangle: 
+                        size: self.size
+                        pos: self.pos
+                        radius: (10, 10), (10, 10), (10, 10), (10, 10)
+                TextInput: 
+                    id: message_input
+                    hint_text: 'Type a message'
+                    foreground_color: 1, 1, 1, 1
+                    background_color: 0, 0, 0, 0
+                    disabled_foreground_color: .5, .5, .5, 1
+                    use_bubble: True
+                    padding_y: 12
+                    on_text_validate: root.send_message()
+            Label: 
+                size_hint: None, 1
+                width: 5
+            MDIconButton: 
+                icon: 'send'
+                md_bg_color: 0, 0, 0, 0
+                on_release: root.send_message()
+        Label: 
+            size_hint: 1, .05
+<ChatsList>: 
+    name: 'Chats'
+<AddUserList>: 
+    name: 'AddUser'
+    BoxLayout: 
+        orientation: 'vertical'
+        BoxLayout: 
+            size_hint: 1, .1
+            Label: 
+                size_hint: .05, 1
+            MDTextField: 
+                id: username_input
+                hint_text: 'Search a username'
+                helper_text: 'Username not found.'
+                color_mode: 'custom'
+                text_color_focus: 'orange'
+                hint_text_color_focus: 'orange'
+                line_color_focus: 'orange'
+                icon_right_color_focus: 'white'
+                helper_text_mode: 'on_error'
+                icon_right: 'magnify'
+                on_text_validate: root.on_validate_username_input_text()
+                on_text: users_list.ids.users_list.clear_widgets()
+            Label: 
+                size_hint: .05, 1
+        UsersList: 
+            id: users_list
+        Label: 
+            size_hint: 1, 0.01
