@@ -23,22 +23,16 @@ import os
 import ctypes
 import configparser
 import logging
-import uuid
 from tblib import pickling_support
 
-main_folder_path: str = os.path.join(os.path.expanduser(r'~\AppData\Local'), __PROJECT__)
-data_folder_path: str = os.path.join(main_folder_path, 'data')
-key_path = os.path.join(data_folder_path, str(uuid.getnode()))
-log_dir: str = os.path.join(main_folder_path, 'logs')
-
 # Create the necessary folders
-for folder in [main_folder_path, data_folder_path]:
+for folder in [main.main_folder_path, main.data_folder_path]:
     if not os.path.exists(folder):
         os.makedirs(folder)
 
 # Important to set the KIVY_HOME environment variable before importing
 # kivy modules
-os.environ['KIVY_HOME'] = main_folder_path
+os.environ['KIVY_HOME'] = main.main_folder_path
 
 from kivy.logger import Logger  # noqa PEP 8: E402
 from kivy.config import Config  # noqa PEP 8: E402
@@ -60,6 +54,8 @@ try:
             screen: str = str(Config.get('app', 'current_screen'))
             theme: str = str(Config.get('app', 'theme'))
             colors: dict[str] = eval(Config.get('app', 'colors'))
+            host = str(Config.get('Server', 'host'))
+            port = int(Config.get('Server', 'port'))
 
             # Perform settings check before proceeding
             if not int(MAX_HEIGHT) >= height >= int(MIN_HEIGHT):
@@ -91,6 +87,7 @@ try:
             # Add extra settings for the application
             try:
                 Config.add_section('app')
+                Config.add_section('Server')
             except configparser.DuplicateSectionError:
                 pass
             Config.set('app', 'current_screen', __SCREENS__[0])
@@ -99,6 +96,8 @@ try:
                        '''{
 "Gray": {"200": "#212121","500": "#212121","700": "#323232"},
  }''')
+            Config.set('Server', 'host', '45.79.122.7')
+            Config.set('Server', 'port', '8080')
             Config.write()
             continue
 

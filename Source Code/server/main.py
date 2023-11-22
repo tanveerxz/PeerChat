@@ -14,6 +14,7 @@ from dependencies.modules.communicator import send, receive
 from dependencies.modules.exceptionalthread import ThreadWithExc
 from dependencies.modules.chat import Chat
 
+
 users: list[dict] = []
 threads: list[ThreadWithExc] = []
 chats: list[Chat] = []

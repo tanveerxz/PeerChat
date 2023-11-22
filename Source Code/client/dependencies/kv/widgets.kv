@@ -40,25 +40,28 @@
                 source: r'dependencies\icons\Icon.png'
             Label: 
                 size_hint: .8, 1
-                text: '[b]PeerChat[/b]'
-                font_size: 20
+                text: '[b]  PeerChat[/b]'
+                font_size: 25
                 markup: True
+                padding_x: 20
                 padding_y: 20
             Label: 
         MDTextField: 
             id: username_input
             pos_hint: {'center_x': .5}
-            size_hint: .8, .25
+            size_hint: .8, .22
             hint_text: 'Enter your username'
-            helper_text: 'Max length exceeded.'
+            helper_text: 'Use the same IP and device for existing users.'
             color_mode: 'custom'
             text_color_focus: 'orange'
             hint_text_color_focus: 'orange'
             line_color_focus: 'orange'
             max_text_length: 20
-            helper_text_mode: 'on_error'
+            helper_text_mode: "persistent"
             on_text_validate: root.validate_username()
-            on_text: root.change_helper_text('Max length exceeded.')
+            on_text:
+                if len(self.text) > 20: root.change_helper_text('Max length exceeded.')
+                else: root.change_helper_text('Use the same IP and device for existing users.')
         Label: 
             size_hint: 1, .08
         MDIconButton:

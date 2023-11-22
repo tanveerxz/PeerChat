@@ -32,18 +32,17 @@ class Chat:
         self.chat: list = []
         self.listen_user_1_thread: ThreadWithExc = None
         self.listen_user_2_thread: ThreadWithExc = None
-        self.listen_message_threads: list[ThreadWithExc] = []
+        self.listen_message_user_1_thread: ThreadWithExc = None
+        self.listen_message_user_2_thread: ThreadWithExc = None
         self.user_1_unread = False
         self.user_2_unread = False
 
     def __delete__(self):
         """Deletes the chat object."""
-        if self.listen_user_1_thread:
-            self.listen_user_1_thread.raiseExc(SystemExit)
-        if self.listen_user_2_thread:
-            self.listen_user_2_thread.raiseExc(SystemExit)
-        for thread in self.listen_message_threads:
-            thread.raiseExc(SystemExit)
+        for thread in [self.listen_user_1_thread, self.listen_user_2_thread,
+                       self.listen_message_user_1_thread, self.listen_message_user_2_thread]:
+            if thread:
+                thread.raiseExc(SystemExit)
 
     def connect_user(self, user):
         """
@@ -109,16 +108,19 @@ class Chat:
                     # Listen to the user for a message.
                     thread = ThreadWithExc(target=self.listen_message, args=(user,))
                     thread.start()
-                    self.listen_message_threads.append(thread)
 
                     if user['id'] == self.user_1['id']:
                         self.user_1 = user
+                        if self.listen_message_user_1_thread:
+                            self.listen_message_user_1_thread.raiseExc(SystemExit)
+                        self.listen_message_user_1_thread = thread
                     else:
                         self.user_2 = user
+                        if self.listen_message_user_2_thread:
+                            self.listen_message_user_2_thread.raiseExc(SystemExit)
+                        self.listen_message_user_2_thread = thread
                     break
-        except SystemExit:
-            pass
-        except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError):
+        except (SystemExit, BrokenPipeError, ConnectionResetError, ConnectionAbortedError):
             pass
         except Exception as error:
             logging.warning('listen_user: ' + str(error))

@@ -8,6 +8,7 @@ import time
 import os
 import uuid
 import socket
+import multiprocessing
 import threading
 import pickle
 import main  # noqa
@@ -25,21 +26,20 @@ from kivymd.uix.dialog import MDDialog
 from kivymd.uix.button import MDFlatButton
 from kivymd.uix.button import MDRectangleFlatButton
 
-main_folder_path: str = os.path.join(os.path.expanduser(r'~\AppData\Local'), main.__PROJECT__)
-data_folder_path: str = os.path.join(main_folder_path, 'data')
-sizes = {
-    (0, 5): 80,
-    (5, 7): 90,
-    (7, 9): 110,
-    (9, 11): 125,
-    (11, 13): 140,
-    (13, 15): 160,
-    (15, 17): 180,
-    (17, 19): 195,
-    (19, 21): 210,
-    (21, 23): 230,
-    (23, 25): 250,
-}
+sizes = \
+    {
+        (0, 5): 80,
+        (5, 7): 90,
+        (7, 9): 110,
+        (9, 11): 125,
+        (11, 13): 140,
+        (13, 15): 160,
+        (15, 17): 180,
+        (17, 19): 195,
+        (19, 21): 210,
+        (21, 23): 230,
+        (23, 25): 250,
+    }
 
 
 class HomeScreen(Screen):
@@ -55,6 +55,7 @@ class HomeScreen(Screen):
     dialog: MDDialog = None
 
     def __delete__(self):
+        # Close all the connections and threads.
         if self.SERVER:
             send('3', self.SERVER)
             self.SERVER.close()
@@ -62,11 +63,11 @@ class HomeScreen(Screen):
             self.SERVER_.close()
 
         for chat in self.chat_screens:
-            chat.chat_server.close()
-            chat.listen_messages_thread.raiseExc(SystemExit)
-            chat.save_chat()
             if chat.add_existing_chat_thread:
                 chat.add_existing_chat_thread.raiseExc(SystemExit)
+            chat.listen_messages_thread.raiseExc(SystemExit)
+            chat.chat_server.close()
+            chat.save_chat()
         try:
             self.listen_new_chats_thread.raiseExc(SystemExit)
         except (ValueError, AttributeError):
@@ -79,6 +80,10 @@ class HomeScreen(Screen):
             # chats.
             self.SERVER_ = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.SERVER_.connect((self.ADDR[0], 9090))
+            # Set the keep alive options for the socket
+            self.SERVER_.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+            self.SERVER_.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, 60)
+            self.SERVER_.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, 10)
 
             # Receive the client username and id from the server.
             self.username, self._id = pickle.loads(receive(self.SERVER, False))
@@ -98,8 +103,8 @@ class HomeScreen(Screen):
         if self.ids.add_user_button.icon == 'account-plus':
             self.ids.menu_title_label.text = 'Add User'
             self.ids.add_user_button.icon = 'chat'
-
             self.ids.menu_sm.current = 'AddUser'
+
         elif self.ids.add_user_button.icon == 'chat':
             self.ids.menu_title_label.text = 'Chats'
             self.ids.add_user_button.icon = 'account-plus'
@@ -112,13 +117,17 @@ class HomeScreen(Screen):
         """
 
         def on_release_change_button():
-            """Function to be executed when the change button is released."""
+            """
+            Function to be executed when the change button is released.
+            """
             self.dialog.dismiss()
             send('2', self.SERVER)
             self.parent.current = 'UserName'
 
         def on_release_cancel_button():
-            """Function to be executed when the cancel button is released."""
+            """
+            Function to be executed when the cancel button is released.
+            """
             self.dialog.dismiss()
 
         if not self.dialog:
@@ -157,6 +166,10 @@ class HomeScreen(Screen):
                     # Connect to the chat server.
                     chat_server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                     chat_server.connect((self.ADDR[0], port))
+                    # Set the keep alive options for the socket
+                    chat_server.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+                    chat_server.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, 60)
+                    chat_server.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, 10)
 
                     # Add the chat to the GUI
                     self.add_chat(chat_server)
@@ -176,7 +189,7 @@ class HomeScreen(Screen):
 
         unread = pickle.loads(receive(chat_server, False))
 
-        user_public_key = os.path.join(data_folder_path, f'{other_user[2]}')
+        user_public_key = os.path.join(main.data_folder_path, f'{other_user[2]}')
 
         # Save the other user's public key.
         with open(f'{user_public_key}.pub', 'w') as file:
@@ -189,6 +202,7 @@ class HomeScreen(Screen):
         if unread:
             user_chat_button.text_color = 'orange'
 
+        # Create the chat screen.
         chat = self.ChatScreen(name=other_user[2])
         chat.user_chat_button = user_chat_button
         chat.other_public_key = user_public_key
@@ -196,7 +210,6 @@ class HomeScreen(Screen):
         chat.ids.chat_started_label.text = f'{chat_started_user} started the chat.'
         chat.self_id = self._id
         chat.other_user_id = other_user[2]
-        chat.load_chat()
 
         # Check if the chat already exists.
         message = receive(chat_server)
@@ -209,6 +222,9 @@ class HomeScreen(Screen):
             chat.add_existing_chat_thread = ThreadWithExc(target=chat.add_existing_chat,
                                                           args=(existing_chat,))
             chat.add_existing_chat_thread.start()
+        else:
+            chat.load_chat()
+
         chat.chat_server = chat_server
 
         self.ids.chat_sm.add_widget(chat)
@@ -222,8 +238,8 @@ class HomeScreen(Screen):
             self.chat_server: socket.socket | None = None
             self.user_chat_button: MDRectangleFlatButton | None = None
             self.other_public_key: str = ''
-            self.self_public_key: str = os.path.join(data_folder_path, f'{uuid.getnode()}')
-            self.self_private_key: str = os.path.join(data_folder_path, f'{uuid.getnode()}')
+            self.self_public_key: str = os.path.join(main.data_folder_path, f'{uuid.getnode()}')
+            self.self_private_key: str = os.path.join(main.data_folder_path, f'{uuid.getnode()}')
             self.listen_messages_thread: ThreadWithExc = ThreadWithExc(target=self.listen_messages)
             self.listen_messages_thread.start()
             self.add_existing_chat_thread: ThreadWithExc | None = None
@@ -251,18 +267,18 @@ class HomeScreen(Screen):
                 self.send_message()
 
         def load_chat(self):
-            """Function to load self-messages."""
-            self_messages_path = os.path.join(data_folder_path,
-                                              f'{self.other_user_id}.dat')
-            if os.path.exists(self_messages_path):
-                with open(self_messages_path, 'rb') as file:
+            """Function to load saved-chat."""
+            saved_chat_path = os.path.join(main.data_folder_path, f'{self.other_user_id}.dat')
+
+            if os.path.exists(saved_chat_path):
+                with open(saved_chat_path, 'rb') as file:
                     self.chat = pickle.load(file)
 
         def save_chat(self):
-            """Function to save self-messages."""
-            self_messages_path = os.path.join(data_folder_path,
-                                              f'{self.other_user_id}.dat')
-            with open(self_messages_path, 'wb') as file:
+            """Function to save the chat."""
+            saved_chat_path = os.path.join(main.data_folder_path, f'{self.other_user_id}.dat')
+
+            with open(saved_chat_path, 'wb') as file:
                 pickle.dump(self.chat, file)
 
         def add_existing_chat(self, chat):
@@ -272,6 +288,12 @@ class HomeScreen(Screen):
             prevent the GUI from freezing.
             """
             try:
+                process = multiprocessing.Process(target=main.decrypt_messages,
+                                                  args=(chat, self.other_user_id))
+                process.start()
+                process.join()
+
+                self.load_chat()
                 for message in chat:
                     if message[1] == self.other_user_id:
                         _message = self.decrypt_message(message[0])
@@ -297,12 +319,10 @@ class HomeScreen(Screen):
         def decrypt_message(self, message: str) -> str:
             """Function to decrypt a message."""
             try:
-                message = self.chat[message]
+                return self.chat[message]
             except KeyError:
-                encrypted_message = message
-                message = pq_ntru.decrypt(self.self_private_key, message)
-                self.chat[encrypted_message] = message
-            return message
+                self.chat[message] = pq_ntru.decrypt(self.self_private_key, message)
+                return self.chat[message]
 
         def listen_messages(self):
             """Function to listen for new messages."""
@@ -439,7 +459,8 @@ class HomeScreen(Screen):
         def on_validate_username_input_text(self):
             """
             Function search for users with the username
-            currently active"""
+            currently active
+            """
             username = self.ids.username_input.text
             if username:
                 server = self.parent.parent.parent.parent.parent.SERVER
@@ -454,7 +475,9 @@ class HomeScreen(Screen):
                     self.ids.username_input.error = True
 
         def on_release_user_button(self, *args):
-            """Function to be executed when a user button is released."""
+            """
+            Function to be executed when a user button is released.
+            """
             _id = args[0].id_
             if _id not in [chat.name for chat in
                            self.parent.parent.parent.parent.parent.chat_screens]:

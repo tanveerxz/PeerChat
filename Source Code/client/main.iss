@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "PeerChat"
-#define MyAppVersion "1.0.1"
+#define MyAppVersion "1.0.2"
 #define MyAppPublisher "Oldmacintosh"
 #define MyAppExeName "PeerChat.exe"
 
@@ -18,8 +18,8 @@ DefaultDirName={autopf}\{#MyAppName}
 DisableProgramGroupPage=yes
 ; Uncomment the following line to run in non administrative install mode (install for current user only.)
 ;PrivilegesRequired=lowest
-OutputDir=D:\My Apps\Latest Versions\PeerChat v1.0.1
-OutputBaseFilename=PeerChatSetup_v1.0.1
+OutputDir=D:\My Apps\Latest Versions\PeerChat v1.0.2
+OutputBaseFilename=PeerChatSetup_v1.0.2
 SetupIconFile=C:\Program Files (x86)\Inno Setup 6\SetupClassicIcon.ico
 Compression=lzma
 SolidCompression=yes
@@ -32,8 +32,8 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
-Source: "D:\My Apps\Latest Versions\PeerChat v1.0.1\PeerChat\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
-Source: "D:\My Apps\Latest Versions\PeerChat v1.0.1\PeerChat\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "D:\My Apps\Latest Versions\PeerChat v1.0.2\PeerChat\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
+Source: "D:\My Apps\Latest Versions\PeerChat v1.0.2\PeerChat\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]

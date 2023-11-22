@@ -6,34 +6,67 @@ Kivy is used for the GUI.
 """
 
 __author__ = 'Oldmacintosh'
-__version__ = 'v1.0.1'
+__version__ = 'v1.0.2'
 __date__ = 'November 2023'
 __PROJECT__ = 'PeerChat'
 __DEBUG__ = False
 
+import os
+import uuid
 import socket
+import pickle
+from dependencies.modules import pq_ntru
 
-ADDR = ('45.79.122.7', 8080)
-SERVER: socket.socket | None = None
+# Define all the paths
+main_folder_path: str = os.path.join(os.path.expanduser(r'~\AppData\Local'), __PROJECT__)
+data_folder_path: str = os.path.join(main_folder_path, 'data')
+key_path = os.path.join(data_folder_path, str(uuid.getnode()))
+
+
+# Since this function is utilized in multiprocessing,
+# it is defined in this file. If it is defined in another file,
+# Kivy is imported into that file in a new process, which results in
+# the establishment of a new window.
+
+# This file supports multiprocessing as it is designed that way
+# to only import kivy in the main process.
+def decrypt_messages(chat: list, other_user_id: str):
+    """
+    Decrypts all the new messages in the given chat and saves it in
+    the given user's chat data so that it can be used later.
+    This function can be run in a different process.
+    :param chat: The chat to decrypt.
+    :param other_user_id: The id of the other user in the chat.
+    """
+    chat_path = os.path.join(data_folder_path, f'{other_user_id}.dat')
+
+    with open(chat_path, 'rb') as file:
+        saved_chat = pickle.load(file)
+
+    for message in chat:
+        try:
+            saved_chat[message[0]]
+        except KeyError:
+            if message[1] == other_user_id:
+                saved_chat[message[0]] = pq_ntru.decrypt(key_path, message[0])
+
+    with open(chat_path, 'wb') as file:
+        pickle.dump(saved_chat, file)
+
 
 if __name__ == '__main__':
-
-    import os
     import sys
-    import uuid
     import multiprocessing
-    import pickle
     from tblib import pickling_support
     import pymsgbox
 
     multiprocessing.freeze_support()
+
     if not __DEBUG__:
         os.environ['KIVY_NO_CONSOLELOG'] = '1'
-
     try:
-        from dependencies.modules.exceptionalthread import ThreadWithExc
         from dependencies.modules.communicator import send, receive
-        from dependencies.modules import pq_ntru
+        from dependencies.modules.exceptionalthread import ThreadWithExc
         from dependencies.modules import kivy_config
         from dependencies.modules.home_screen import HomeScreen
         from kivymd.app import MDApp
@@ -46,6 +79,9 @@ if __name__ == '__main__':
         pickling_support.install()
 
         startup: bool = True
+
+        ADDR: tuple[str, int] = (kivy_config.host, kivy_config.port)
+        SERVER: socket.socket | None = None
 
 
         class EmptyScreen(Screen):
@@ -108,12 +144,17 @@ if __name__ == '__main__':
                     global SERVER, startup
                     startup = False
                     # Create the public and private keys for the user
-                    if not os.path.exists(fr'{kivy_config.key_path}.pub') or not os.path.exists(
-                            fr'{kivy_config.key_path}.priv'):
-                        pq_ntru.generate_keys(kivy_config.key_path, 'moderate', True)
+                    if not os.path.exists(fr'{key_path}.pub') or not os.path.exists(
+                            fr'{key_path}.priv'):
+                        pq_ntru.generate_keys(key_path, 'moderate', True)
 
                     SERVER = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                     SERVER.connect(ADDR)
+                    # Set the keep alive options for the socket
+                    SERVER.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+                    SERVER.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, 60)
+                    SERVER.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, 10)
+
                     send(str(uuid.getnode()), SERVER)
 
                     self.parent.ids.Home.SERVER = SERVER
@@ -146,7 +187,7 @@ if __name__ == '__main__':
             transitions to the home screen.
             """
 
-            with open(f'{kivy_config.key_path}.pub') as file:
+            with open(f'{key_path}.pub') as file:
                 public_key = file.read()
 
             send(public_key, SERVER)
@@ -230,8 +271,8 @@ if __name__ == '__main__':
         app_instance = PeerChat()
         app_instance.run()
 
-        app_instance.screen_manager.ids.Home.__delete__()
-
+    except KeyboardInterrupt:
+        pass
     except Exception as error:
 
         from kivy.logger import Logger
@@ -243,4 +284,9 @@ if __name__ == '__main__':
                 text=f'''PeerChat has crashed due to an unexpected exception\nException"{
                 error}"''', title='Error', button='OK')
 
-    Window.close()
+    try:
+        app_instance.screen_manager.ids.Home.__delete__()  # noqa
+    except AttributeError:
+        pass
+    if Window:
+        Window.close()
